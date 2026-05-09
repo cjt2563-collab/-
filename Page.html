@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f5f7ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .btn-bounce:active { transform: scale(0.95); }
+    
+    /* 사진 버튼 스타일 */
+    .photo-btn {
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      overflow: hidden;
+      border: none;
+      color: white;
+      text-shadow: 0px 2px 4px rgba(0,0,0,0.8); /* 글자 가독성 */
+    }
+    /* 사진 위에 살짝 어두운 덮개 추가 (글자 더 잘 보이게) */
+    .photo-btn::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.2);
+      z-index: 1;
+    }
+    .photo-btn span { position: relative; z-index: 2; }
+  </style>
+</head>
+<body>
+  <div class="w-full max-w-sm p-4">
+    <div class="bg-white p-8 rounded-[40px] shadow-2xl border-b-8 border-indigo-100 text-center">
+      <h2 class="text-gray-400 font-bold text-xs tracking-widest mb-4 uppercase">Photo Vibe Timer</h2>
+      <div id="display" class="text-7xl font-black text-indigo-600 mb-10 tabular-nums">00:00</div>
+
+      <div class="grid grid-cols-3 gap-3 mb-10">
+        <button id="btn1" onclick="setTimerFromBtn(this)" class="btn-bounce photo-btn bg-indigo-50 py-6 rounded-2xl font-bold text-lg flex items-center justify-center"><span>--M</span></button>
+        <button id="btn2" onclick="setTimerFromBtn(this)" class="btn-bounce photo-btn bg-indigo-50 py-6 rounded-2xl font-bold text-lg flex items-center justify-center"><span>--M</span></button>
+        <button id="btn3" onclick="setTimerFromBtn(this)" class="btn-bounce photo-btn bg-indigo-50 py-6 rounded-2xl font-bold text-lg flex items-center justify-center"><span>--M</span></button>
+      </div>
+
+      <div class="flex items-center justify-center gap-6">
+        <button id="toggleBtn" onclick="toggleTimer()" class="w-20 h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg text-2xl transition-all">▶</button>
+        <button onclick="resetTimer()" class="w-16 h-16 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200">↺</button>
+      </div>
+
+      <div class="mt-10 w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-indigo-500 transition-all duration-1000" style="width: 0%"></div>
+      </div>
+      
+    </div>
+  </div>
+
+  <script>
+    let timeLeft = 0, totalTime = 0, timerId = null, isActive = false;
+
+    window.onload = function() {
+      google.script.run.withSuccessHandler(setupButtons).getTimerSettings();
+    };
+
+    function setupButtons(settings) {
+      [1, 2, 3].forEach(num => {
+        const btnData = settings['btn' + num];
+        const btnElement = document.getElementById('btn' + num);
+        
+        // 시간 설정
+        btnElement.querySelector('span').innerText = btnData.mins + 'M';
+        btnElement.setAttribute('data-mins', btnData.mins);
+        
+        // 배경 이미지 설정
+        if (btnData.img && btnData.img.startsWith('http')) {
+          btnElement.style.backgroundImage = `url('${btnData.img}')`;
+          btnElement.classList.add('text-white');
+        } else {
+          btnElement.style.backgroundImage = 'none';
+          btnElement.classList.remove('text-white');
+          btnElement.classList.add('text-indigo-600');
+        }
+      });
+    }
+
+    function setTimerFromBtn(btn) {
+      const mins = parseInt(btn.getAttribute('data-mins'));
+      if (!mins) return;
+      timeLeft = mins * 60; totalTime = timeLeft; isActive = true;
+      updateDisplay(); startCountdown();
+      document.getElementById('toggleBtn').innerText = '⏸';
+      document.getElementById('toggleBtn').classList.replace('bg-emerald-500', 'bg-rose-500');
+    }
+
+    function startCountdown() {
+      clearInterval(timerId);
+      timerId = setInterval(() => {
+        if (timeLeft > 0) { timeLeft--; updateDisplay(); }
+        else { clearInterval(timerId); isActive = false; alert('Time Up!'); resetTimer(); }
+      }, 1000);
+    }
+
+    function updateDisplay() {
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      
+      // 1. 숫자 업데이트
+      document.getElementById('display').innerText = 
+        `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      
+      // 2. 진행 바 업데이트 (안전장치 추가)
+      const progressBar = document.getElementById('progressBar');
+      if (progressBar) { 
+        if (totalTime > 0) {
+          const progress = (timeLeft / totalTime) * 100;
+          progressBar.style.width = progress + '%';
+        } else {
+          progressBar.style.width = '0%';
+        }
+      }
+    }
+
+    function toggleTimer() {
+      if (timeLeft <= 0) return;
+      const tb = document.getElementById('toggleBtn');
+      if (isActive) { clearInterval(timerId); tb.innerText = '▶'; tb.classList.replace('bg-rose-500', 'bg-emerald-500'); }
+      else { startCountdown(); tb.innerText = '⏸'; tb.classList.replace('bg-emerald-500', 'bg-rose-500'); }
+      isActive = !isActive;
+    }
+
+    function resetTimer() {
+      clearInterval(timerId); timeLeft = 0; totalTime = 0; isActive = false;
+      const tb = document.getElementById('toggleBtn');
+      tb.innerText = '▶'; tb.classList.replace('bg-rose-500', 'bg-emerald-500');
+      updateDisplay();
+    }
+  </script>
+</body>
+</html>
