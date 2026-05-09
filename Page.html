@@ -7,129 +7,182 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f5f7ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
     .btn-bounce:active { transform: scale(0.95); }
-    
-    /* 사진 버튼 스타일 */
-    .photo-btn {
-      position: relative;
-      background-size: cover;
-      background-position: center;
-      overflow: hidden;
-      border: none;
-      color: white;
-      text-shadow: 0px 2px 4px rgba(0,0,0,0.8); /* 글자 가독성 */
-    }
-    /* 사진 위에 살짝 어두운 덮개 추가 (글자 더 잘 보이게) */
-    .photo-btn::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.2);
-      z-index: 1;
-    }
-    .photo-btn span { position: relative; z-index: 2; }
+    .photo-btn { position: relative; background-size: cover; background-position: center; overflow: hidden; color: white; transition: all 0.3s; border-radius: 1.5rem; }
+    .photo-btn::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 1; }
+    .photo-btn span { position: relative; z-index: 2; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .edit-panel { display: none; background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); }
   </style>
 </head>
 <body>
-  <div class="w-full max-w-sm p-4">
-    <div class="bg-white p-8 rounded-[40px] shadow-2xl border-b-8 border-indigo-100 text-center">
-      <h2 class="text-gray-400 font-bold text-xs tracking-widest mb-4 uppercase">Photo Vibe Timer</h2>
-      <div id="display" class="text-7xl font-black text-indigo-600 mb-10 tabular-nums">00:00</div>
+  <div class="w-full max-w-sm p-4 relative">
+    <div class="bg-white p-8 rounded-[40px] shadow-2xl border-b-8 border-indigo-100 text-center relative overflow-hidden">
+      <button onclick="toggleEdit()" class="absolute top-4 right-4 text-gray-300 hover:text-indigo-500 transition-colors z-10">⚙️</button>
+      
+      <h2 class="text-gray-400 font-bold text-xs tracking-widest mb-4 uppercase">Custom Focus</h2>
+      <div id="display" class="text-7xl font-black text-indigo-600 mb-8 tabular-nums">00:00</div>
 
-      <div class="grid grid-cols-3 gap-3 mb-10">
-        <button id="btn1" onclick="setTimerFromBtn(this)" class="btn-bounce photo-btn bg-indigo-50 py-6 rounded-2xl font-bold text-lg flex items-center justify-center"><span>--M</span></button>
-        <button id="btn2" onclick="setTimerFromBtn(this)" class="btn-bounce photo-btn bg-indigo-50 py-6 rounded-2xl font-bold text-lg flex items-center justify-center"><span>--M</span></button>
-        <button id="btn3" onclick="setTimerFromBtn(this)" class="btn-bounce photo-btn bg-indigo-50 py-6 rounded-2xl font-bold text-lg flex items-center justify-center"><span>--M</span></button>
+      <div class="grid grid-cols-3 gap-3 mb-8">
+        <button id="btn1" onclick="handleBtnClick(1)" class="btn-bounce photo-btn bg-indigo-50 py-6 font-bold"><span>--</span></button>
+        <button id="btn2" onclick="handleBtnClick(2)" class="btn-bounce photo-btn bg-indigo-50 py-6 font-bold"><span>--</span></button>
+        <button id="btn3" onclick="handleBtnClick(3)" class="btn-bounce photo-btn bg-indigo-50 py-6 font-bold"><span>--</span></button>
       </div>
 
-      <div class="flex items-center justify-center gap-6">
-        <button id="toggleBtn" onclick="toggleTimer()" class="w-20 h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg text-2xl transition-all">▶</button>
-        <button onclick="resetTimer()" class="w-16 h-16 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200">↺</button>
+      <div class="flex items-center justify-center gap-4">
+        <button id="toggleBtn" onclick="toggleTimer()" class="w-16 h-16 rounded-full bg-emerald-500 text-white shadow-lg text-xl flex items-center justify-center">▶</button>
+        <button onclick="resetTimer()" class="w-12 h-12 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center">↺</button>
       </div>
 
-      <div class="mt-10 w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+      <div class="mt-8 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
         <div id="progressBar" class="h-full bg-indigo-500 transition-all duration-1000" style="width: 0%"></div>
       </div>
-      
+
+      <div id="editPanel" class="edit-panel absolute inset-0 p-8 flex flex-col justify-center items-center z-50">
+        <h3 class="font-bold text-gray-700 mb-4 text-lg">버튼 커스텀</h3>
+        
+        <select id="targetBtn" class="w-full p-3 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="1">첫 번째 버튼</option>
+          <option value="2">두 번째 버튼</option>
+          <option value="3">세 번째 버튼</option>
+        </select>
+        
+        <input type="number" id="newMins" placeholder="시간 입력 (분)" class="w-full p-3 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        
+        <label class="w-full mb-4">
+          <span class="text-xs text-gray-400 block mb-1 ml-1 text-left">배경 사진 선택</span>
+          <input type="file" id="newImg" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+        </label>
+
+        <div class="flex gap-2 w-full mt-2">
+          <button onclick="saveChanges()" id="saveBtn" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform">저장하기</button>
+          <button onclick="toggleEdit()" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-sm active:scale-95 transition-transform">취소</button>
+        </div>
+
+        <p id="loader" class="mt-4 text-xs text-indigo-600 hidden animate-bounce">변경중...</p>
+        <div id="statusMsg" class="mt-4 text-sm font-bold hidden text-center"></div>
+      </div>
     </div>
   </div>
 
   <script>
     let timeLeft = 0, totalTime = 0, timerId = null, isActive = false;
+    let settings = {};
 
-    window.onload = function() {
-      google.script.run.withSuccessHandler(setupButtons).getTimerSettings();
-    };
+    window.onload = loadSettings;
 
-    function setupButtons(settings) {
-      [1, 2, 3].forEach(num => {
-        const btnData = settings['btn' + num];
-        const btnElement = document.getElementById('btn' + num);
-        
-        // 시간 설정
-        btnElement.querySelector('span').innerText = btnData.mins + 'M';
-        btnElement.setAttribute('data-mins', btnData.mins);
-        
-        // 배경 이미지 설정
-        if (btnData.img && btnData.img.startsWith('http')) {
-          btnElement.style.backgroundImage = `url('${btnData.img}')`;
-          btnElement.classList.add('text-white');
-        } else {
-          btnElement.style.backgroundImage = 'none';
-          btnElement.classList.remove('text-white');
-          btnElement.classList.add('text-indigo-600');
-        }
+    function loadSettings() {
+      google.script.run.withSuccessHandler(data => {
+        settings = data;
+        updateUI();
+      }).getTimerSettings();
+    }
+
+    function updateUI() {
+      [1,2,3].forEach(i => {
+        const btn = document.getElementById('btn' + i);
+        const item = settings['btn' + i];
+        btn.querySelector('span').innerText = item.mins + 'M';
+        if (item.img) btn.style.backgroundImage = `url('${item.img}')`;
       });
     }
 
-    function setTimerFromBtn(btn) {
-      const mins = parseInt(btn.getAttribute('data-mins'));
-      if (!mins) return;
-      timeLeft = mins * 60; totalTime = timeLeft; isActive = true;
-      updateDisplay(); startCountdown();
-      document.getElementById('toggleBtn').innerText = '⏸';
-      document.getElementById('toggleBtn').classList.replace('bg-emerald-500', 'bg-rose-500');
+    function toggleEdit() {
+      const panel = document.getElementById('editPanel');
+      const statusMsg = document.getElementById('statusMsg');
+      panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+      statusMsg.classList.add('hidden'); // 패널 열 때 메시지 초기화
+    }
+
+    function showStatus(text, isError = false) {
+      const statusMsg = document.getElementById('statusMsg');
+      statusMsg.innerText = text;
+      statusMsg.className = `mt-4 text-sm font-bold ${isError ? 'text-rose-500' : 'text-emerald-500'}`;
+      statusMsg.classList.remove('hidden');
+    }
+
+    function saveChanges() {
+      const btnIndex = document.getElementById('targetBtn').value;
+      const mins = document.getElementById('newMins').value;
+      const fileInput = document.getElementById('newImg');
+      const loader = document.getElementById('loader');
+      const saveBtn = document.getElementById('saveBtn');
+      const statusMsg = document.getElementById('statusMsg');
+
+      if (!mins) {
+        showStatus("시간을 입력해주세요!", true);
+        return;
+      }
+      
+      loader.classList.remove('hidden');
+      statusMsg.classList.add('hidden');
+      saveBtn.disabled = true;
+
+      const finishUpload = (fileData) => {
+        google.script.run.withSuccessHandler(res => {
+          loader.classList.add('hidden');
+          saveBtn.disabled = false;
+          if (res.success) {
+            showStatus("✅ 변경 완료! 잠시 후 닫힙니다.");
+            loadSettings();
+            setTimeout(() => { toggleEdit(); }, 1500);
+          } else {
+            showStatus("❌ 에러: " + res.error, true);
+          }
+        }).updateButtonSettings(btnIndex, mins, fileData);
+      };
+
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = e => finishUpload({ base64: e.target.result.split(',')[1] });
+        reader.readAsDataURL(file);
+      } else {
+        finishUpload(null);
+      }
+    }
+
+    function handleBtnClick(i) {
+      const mins = settings['btn' + i].mins;
+      if(!mins) return;
+      timeLeft = mins * 60; totalTime = timeLeft;
+      isActive = true; updateDisplay(); startCountdown();
+      const tb = document.getElementById('toggleBtn');
+      tb.innerText = '⏸';
+      tb.className = "w-16 h-16 rounded-full bg-rose-500 text-white shadow-lg text-xl flex items-center justify-center";
     }
 
     function startCountdown() {
       clearInterval(timerId);
       timerId = setInterval(() => {
         if (timeLeft > 0) { timeLeft--; updateDisplay(); }
-        else { clearInterval(timerId); isActive = false; alert('Time Up!'); resetTimer(); }
+        else { clearInterval(timerId); isActive = false; showStatus("시간이 다 되었습니다!"); resetTimer(); }
       }, 1000);
     }
 
     function updateDisplay() {
-      const mins = Math.floor(timeLeft / 60);
-      const secs = timeLeft % 60;
-      
-      // 1. 숫자 업데이트
-      document.getElementById('display').innerText = 
-        `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-      
-      // 2. 진행 바 업데이트 (안전장치 추가)
-      const progressBar = document.getElementById('progressBar');
-      if (progressBar) { 
-        if (totalTime > 0) {
-          const progress = (timeLeft / totalTime) * 100;
-          progressBar.style.width = progress + '%';
-        } else {
-          progressBar.style.width = '0%';
-        }
-      }
+      const mins = Math.floor(timeLeft / 60), secs = timeLeft % 60;
+      document.getElementById('display').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      const progress = totalTime > 0 ? (timeLeft / totalTime) * 100 : 0;
+      document.getElementById('progressBar').style.width = progress + '%';
     }
 
     function toggleTimer() {
       if (timeLeft <= 0) return;
       const tb = document.getElementById('toggleBtn');
-      if (isActive) { clearInterval(timerId); tb.innerText = '▶'; tb.classList.replace('bg-rose-500', 'bg-emerald-500'); }
-      else { startCountdown(); tb.innerText = '⏸'; tb.classList.replace('bg-emerald-500', 'bg-rose-500'); }
+      if (isActive) {
+        clearInterval(timerId); tb.innerText = '▶';
+        tb.className = "w-16 h-16 rounded-full bg-emerald-500 text-white shadow-lg text-xl flex items-center justify-center";
+      } else {
+        startCountdown(); tb.innerText = '⏸';
+        tb.className = "w-16 h-16 rounded-full bg-rose-500 text-white shadow-lg text-xl flex items-center justify-center";
+      }
       isActive = !isActive;
     }
 
     function resetTimer() {
       clearInterval(timerId); timeLeft = 0; totalTime = 0; isActive = false;
       const tb = document.getElementById('toggleBtn');
-      tb.innerText = '▶'; tb.classList.replace('bg-rose-500', 'bg-emerald-500');
+      tb.innerText = '▶';
+      tb.className = "w-16 h-16 rounded-full bg-emerald-500 text-white shadow-lg text-xl flex items-center justify-center";
       updateDisplay();
     }
   </script>
